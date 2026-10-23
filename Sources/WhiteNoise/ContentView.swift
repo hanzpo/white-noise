@@ -10,13 +10,16 @@ struct ContentView: View {
         GlassEffectContainer(spacing: 16) {
             VStack(spacing: 22) {
                 playButton
-                colorPicker
+                VStack(spacing: 10) {
+                    modePicker
+                    blurb
+                }
                 volumeBar
                 timerBar
             }
             .padding(24)
         }
-        .animation(.smooth(duration: 0.4), value: model.color)
+        .animation(.smooth(duration: 0.4), value: model.mode)
         .animation(.smooth(duration: 0.4), value: model.isPlaying)
         .animation(.smooth(duration: 0.4), value: model.timerEnd)
     }
@@ -34,38 +37,46 @@ struct ContentView: View {
         .help(model.isPlaying ? "Stop" : "Play")
     }
 
-    private var colorPicker: some View {
-        HStack(spacing: 6) {
-            ForEach(NoiseColor.allCases) { color in
-                Button { model.color = color } label: {
-                    Text(color.name)
-                        .font(.callout.weight(model.color == color ? .semibold : .regular))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .contentShape(.capsule)
+    private var modePicker: some View {
+        HStack(spacing: 4) {
+            ForEach(Mode.allCases) { mode in
+                Button { model.mode = mode } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: mode.symbol)
+                            .font(.title3)
+                            .frame(height: 24)
+                        Text(mode.name)
+                            .font(.caption.weight(model.mode == mode ? .semibold : .regular))
+                    }
+                    .foregroundStyle(model.mode == mode ? .primary : .secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .contentShape(.rect(cornerRadius: 14))
                 }
                 .buttonStyle(.plain)
                 .background {
-                    if model.color == color {
-                        Capsule()
+                    if model.mode == mode {
+                        RoundedRectangle(cornerRadius: 14)
                             .fill(.clear)
-                            .glassEffect(.regular.interactive(), in: .capsule)
+                            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 14))
                             .glassEffectID("selection", in: glass)
                     }
                 }
             }
         }
         .padding(4)
-        .glassEffect(in: .capsule)
-        .overlay(alignment: .bottom) {
-            Text(model.color.blurb)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .offset(y: 22)
-                .id(model.color)
-                .transition(.blurReplace)
-        }
-        .padding(.bottom, 14)
+        .glassEffect(in: .rect(cornerRadius: 18))
+    }
+
+    private var blurb: some View {
+        Text(model.mode.blurb)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, minHeight: 30)
+            .id(model.mode)
+            .transition(.blurReplace)
     }
 
     private var volumeBar: some View {
@@ -93,7 +104,7 @@ struct ContentView: View {
                     Button("Cancel Timer", role: .destructive) { model.setTimer(minutes: nil) }
                 }
             } label: {
-                Label("Sleep Timer", systemImage: "moon.zzz.fill")
+                Label("Timer", systemImage: "timer")
                     .padding(.horizontal, 6)
             }
             .menuIndicator(.hidden)

@@ -9,13 +9,17 @@ final class NoiseModel {
 
     private(set) var isPlaying = false
     private(set) var timerEnd: Date?
+    /// 1 normally, ramps to 0 over the last stretch of the sleep timer.
+    private var fade: Double = 1 {
+        didSet { applyVolume() }
+    }
 
-    var color: NoiseColor = .white {
-        didSet { engine.setColor(color) }
+    var mode: Mode = .focus {
+        didSet { engine.setMode(mode) }
     }
 
     var volume: Double = 0.5 {
-        didSet { engine.volume = Float(volume) }
+        didSet { applyVolume() }
     }
 
     func toggle() { isPlaying ? stop() : play() }
@@ -31,15 +35,25 @@ final class NoiseModel {
         cancelTimer()
     }
 
-    /// Stop playback after `minutes`. Pass nil to clear.
+    /// Stop playback after `minutes`, fading out gradually so the ending doesn't wake you. Pass nil to clear.
     func setTimer(minutes: Int?) {
         cancelTimer()
         guard let minutes else { return }
         if !isPlaying { play() }
-        let end = Date().addingTimeInterval(TimeInterval(minutes * 60))
-        timerEnd = end
+        let total = TimeInterval(minutes * 60)
+        let fadeLength = min(10 * 60, total / 2)
+        let start = Date()
+        timerEnd = start.addingTimeInterval(total)
         timerTask = Task { [weak self] in
-            try? await Task.sleep(until: .now + .seconds(minutes * 60), clock: .continuous)
+            try? await Task.sleep(for: .seconds(total - fadeLength))
+            while !Task.isCancelled {
+                let remaining = total - Date().timeIntervalSince(start)
+                guard remaining > 0 else { break }
+                // Squared ramp sounds closer to linear in perceived loudness
+                let progress = remaining / fadeLength
+                self?.fade = progress * progress
+                try? await Task.sleep(for: .milliseconds(250))
+            }
             guard !Task.isCancelled else { return }
             self?.stop()
         }
@@ -49,5 +63,10 @@ final class NoiseModel {
         timerTask?.cancel()
         timerTask = nil
         timerEnd = nil
+        fade = 1
+    }
+
+    private func applyVolume() {
+        engine.volume = Float(volume * fade)
     }
 }
