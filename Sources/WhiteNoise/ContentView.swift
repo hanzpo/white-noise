@@ -1,18 +1,5 @@
 import SwiftUI
 
-extension NoiseColor {
-    /// Palette for the background mesh and glass tint.
-    var palette: [Color] {
-        switch self {
-        case .white: [.init(white: 0.92), .cyan.opacity(0.5), .indigo.opacity(0.45), .init(white: 0.75)]
-        case .pink: [.pink.opacity(0.7), .purple.opacity(0.6), .orange.opacity(0.45), .pink.opacity(0.35)]
-        case .brown: [.brown, .orange.opacity(0.7), .init(red: 0.3, green: 0.18, blue: 0.1), .yellow.opacity(0.4)]
-        }
-    }
-
-    var tint: Color { palette[1] }
-}
-
 struct ContentView: View {
     @Bindable var model: NoiseModel
     @Namespace private var glass
@@ -29,7 +16,6 @@ struct ContentView: View {
             }
             .padding(24)
         }
-        .background { FlowingBackground(color: model.color, isPlaying: model.isPlaying) }
         .animation(.smooth(duration: 0.4), value: model.color)
         .animation(.smooth(duration: 0.4), value: model.isPlaying)
         .animation(.smooth(duration: 0.4), value: model.timerEnd)
@@ -44,7 +30,7 @@ struct ContentView: View {
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.tint(model.isPlaying ? model.color.tint.opacity(0.35) : nil).interactive(), in: .circle)
+        .glassEffect(.regular.interactive(), in: .circle)
         .help(model.isPlaying ? "Stop" : "Play")
     }
 
@@ -63,7 +49,7 @@ struct ContentView: View {
                     if model.color == color {
                         Capsule()
                             .fill(.clear)
-                            .glassEffect(.regular.tint(color.tint.opacity(0.5)).interactive(), in: .capsule)
+                            .glassEffect(.regular.interactive(), in: .capsule)
                             .glassEffectID("selection", in: glass)
                     }
                 }
@@ -86,7 +72,6 @@ struct ContentView: View {
         HStack(spacing: 10) {
             Image(systemName: "speaker.fill")
             Slider(value: $model.volume, in: 0...1)
-                .tint(model.color.tint)
             Image(systemName: "speaker.wave.3.fill")
         }
         .foregroundStyle(.secondary)
@@ -125,28 +110,5 @@ struct ContentView: View {
                     .transition(.blurReplace)
             }
         }
-    }
-}
-
-/// Slowly drifting mesh gradient for the glass to refract. Freezes when paused.
-struct FlowingBackground: View {
-    let color: NoiseColor
-    let isPlaying: Bool
-
-    var body: some View {
-        TimelineView(.animation(paused: !isPlaying)) { context in
-            let t = Float(context.date.timeIntervalSinceReferenceDate)
-            let c = color.palette
-            MeshGradient(
-                width: 3, height: 3,
-                points: [
-                    [0, 0], [0.5, 0], [1, 0],
-                    [0, 0.5], [0.5 + 0.2 * sin(t * 0.4), 0.5 + 0.2 * cos(t * 0.3)], [1, 0.5],
-                    [0, 1], [0.5, 1], [1, 1],
-                ],
-                colors: [c[0], c[1], c[2], c[3], c[0], c[1], c[2], c[3], c[0]]
-            )
-        }
-        .ignoresSafeArea()
     }
 }

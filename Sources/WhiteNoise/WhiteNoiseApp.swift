@@ -8,6 +8,8 @@ struct WhiteNoiseApp: App {
         Window("White Noise", id: "main") {
             ContentView(model: model)
                 .frame(width: 360)
+                .glassEffect(.regular, in: .rect(cornerRadius: 26))
+                .containerBackground(.clear, for: .window)
         }
         .windowStyle(.hiddenTitleBar)
         .windowBackgroundDragBehavior(.enabled)
