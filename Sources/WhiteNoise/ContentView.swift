@@ -109,6 +109,14 @@ struct ContentView: View {
                     .glassEffectID("countdown", in: glass)
                     .transition(.blurReplace)
             }
+
+            Spacer()
+
+            Button { NSApp.terminate(nil) } label: {
+                Image(systemName: "power")
+            }
+            .buttonStyle(.glass)
+            .help("Quit White Noise")
         }
     }
 }
